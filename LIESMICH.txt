@@ -1,0 +1,35 @@
+Ordner-Organigramm
+==================
+
+Erstellt aus einem Ordner eine übersichtliche Übersicht zum Verschicken:
+als PDF, als HTML-Datei und als Text. Gezeigt werden nur Ordner, keine Dateien.
+
+So geht es
+  1. Organigramm.exe doppelklicken.
+  2. Ordner und Tiefe wählen.
+  3. Auf "Erstellen" klicken. Das PDF geht danach von selbst auf.
+
+Die Ergebnisse landen auf dem Desktop, außer es wird etwas anderes gewählt.
+Der dargestellte Ordner wird nur gelesen und nicht verändert.
+
+Gut zu wissen
+  "+ 72 weitere"  Der Ordner hat mehr Unterordner, als aufgelistet sind.
+                  In der HTML-Datei lassen sie sich per Klick aufklappen.
+  "+4"            Der Ordner enthält 4 weitere Unterordner in tieferen Ebenen.
+  "A"             Diese Ordner sind gleich aufgebaut. Der Aufbau steht unten in der Karte.
+
+Wenn etwas nicht klappt
+  "Ordner nicht gefunden"    Ist das Netzlaufwerk verbunden? Im Explorer prüfen.
+  Kein PDF                   Das PDF wird über Microsoft Edge erzeugt. Ohne Edge bleibt die
+                             HTML-Datei: öffnen, Strg+P, "Als PDF speichern".
+  Programm wird blockiert    Bitte an die IT wenden.
+
+Zum Kopieren
+  Immer den ganzen Ordner kopieren. Der Unterordner "_internal" gehört zum Programm.
+  Python muss nicht installiert sein.
+
+Automatisch, z. B. als geplante Aufgabe (ohne Fenster)
+  Organigramm.exe --ohne-fenster "D:\Ordner" --ausgabe "D:\Zielordner" --tiefe 4
+
+Quellcode
+  https://github.com/zerox80/organigramm_python

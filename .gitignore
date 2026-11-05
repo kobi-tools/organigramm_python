@@ -1,0 +1,13 @@
+# Build
+.venv/
+build/
+dist/
+__pycache__/
+*.pyc
+
+# Erzeugte Übersichten zeigen echte Ordnernamen
+*.pdf
+*.html
+*.txt
+!LIESMICH.txt
+!version_info.txt
