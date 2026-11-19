@@ -12,6 +12,12 @@ So geht es
 Die Ergebnisse landen auf dem Desktop, außer es wird etwas anderes gewählt.
 Der dargestellte Ordner wird nur gelesen und nicht verändert.
 
+Im Web veröffentlichen
+  Ordner und Tiefe wählen, dann auf "Web veröffentlichen …" klicken.
+  HTTPS-Adresse der Ablage und Veröffentlichungsschlüssel eingeben.
+  Die Anwendung öffnet die Website nach erfolgreicher Übertragung.
+  Die Adresse bleibt gespeichert. Den Schlüssel gibst du bei jedem Upload ein.
+
 Gut zu wissen
   "+ 72 weitere"  Der Ordner hat mehr Unterordner, als aufgelistet sind.
                   In der HTML-Datei lassen sie sich per Klick aufklappen.
