@@ -22,6 +22,7 @@ from tkinter import filedialog, font, messagebox, ttk
 
 import ordner_organigramm_v2 as kern
 import web_veroeffentlichen as web
+import windows_schluessel as schluesselspeicher
 
 TITEL = "Ordner-Organigramm"
 QUELLCODE_URL = "https://github.com/zerox80/organigramm_python"
@@ -308,6 +309,7 @@ class Fenster(tk.Tk):
         rahmen.columnconfigure(0, weight=1)
         ziel = tk.StringVar(master=dialog, value=web.gespeichertes_ziel())
         schluessel = tk.StringVar(master=dialog)
+        merken = tk.BooleanVar(master=dialog, value=schluesselspeicher.VERFUEGBAR)
         ttk.Label(rahmen, text=f"{ordner} · {tiefe_text}", wraplength=420).grid(row=0, column=0, sticky="w")
         ttk.Label(rahmen, text="Adresse der Ablage").grid(row=1, column=0, sticky="w", pady=(12, 2))
         adresse = ttk.Entry(rahmen, textvariable=ziel, width=50)
@@ -315,8 +317,34 @@ class Fenster(tk.Tk):
         ttk.Label(rahmen, text="Veröffentlichungsschlüssel").grid(row=3, column=0, sticky="w", pady=(12, 2))
         passwort = ttk.Entry(rahmen, textvariable=schluessel, show="•")
         passwort.grid(row=4, column=0, sticky="ew")
+        if schluesselspeicher.VERFUEGBAR:
+            ttk.Checkbutton(
+                rahmen, text="Schlüssel auf diesem Rechner merken", variable=merken,
+            ).grid(row=5, column=0, sticky="w", pady=(8, 0))
         aktionen = ttk.Frame(rahmen)
-        aktionen.grid(row=5, column=0, sticky="e", pady=(14, 0))
+        aktionen.grid(row=6, column=0, sticky="e", pady=(14, 0))
+
+        bisheriges_ziel = None
+
+        def schluessel_laden(*_):
+            nonlocal bisheriges_ziel
+            try:
+                server = web.server_adresse(ziel.get())
+            except ValueError:
+                server = None
+            if server == bisheriges_ziel:
+                return
+            bisheriges_ziel = server
+            gespeichert = ""
+            if server:
+                try:
+                    gespeichert = schluesselspeicher.lesen(server)
+                except (OSError, UnicodeError):
+                    pass
+            schluessel.set(gespeichert)
+
+        ziel.trace_add("write", schluessel_laden)
+        schluessel_laden()
 
         def senden(_event=None):
             try:
@@ -327,11 +355,14 @@ class Fenster(tk.Tk):
             except ValueError as fehler:
                 messagebox.showinfo(dialog.title(), str(fehler), parent=dialog)
                 return "break"
+            schluessel_merken = merken.get()
             dialog.destroy()
             self.arbeit_beginnen()
             self.status.set("Lese den Ordnerbaum für die Website …")
             threading.Thread(
-                target=self.web_arbeiten, args=(ordner, TIEFEN[tiefe_text], server, schluessel_text), daemon=True,
+                target=self.web_arbeiten,
+                args=(ordner, TIEFEN[tiefe_text], server, schluessel_text, schluessel_merken),
+                daemon=True,
             ).start()
             self.after(100, self.nachrichten_holen)
             return "break"
@@ -342,13 +373,20 @@ class Fenster(tk.Tk):
         dialog.bind("<Escape>", lambda _: dialog.destroy())
         (passwort if ziel.get() else adresse).focus_set()
 
-    def web_arbeiten(self, ordner, tiefe, server, schluessel):
+    def web_arbeiten(self, ordner, tiefe, server, schluessel, merken):
         try:
             struktur = kern.struktur_lesen(ordner, tiefe)
             self.nachrichten.put(("status", "Übertrage Ordnerbaum an die Website …"))
-            self.nachrichten.put(("web_fertig", web.veroeffentliche(server, schluessel, struktur)))
+            adresse = web.veroeffentliche(server, schluessel, struktur)
         except (OSError, ValueError, RecursionError) as fehler:
             self.nachrichten.put(("web_fehler", str(fehler)))
+            return
+        status = "Ordnerstruktur veröffentlicht."
+        try:
+            schluesselspeicher.speichern(adresse, schluessel if merken else "")
+        except OSError:
+            status = "Veröffentlicht. Windows konnte den gespeicherten Schlüssel nicht aktualisieren."
+        self.nachrichten.put(("web_fertig", (adresse, status)))
 
     def arbeiten(self, teile: list):
         """Läuft im Hintergrund, damit das Fenster bedienbar bleibt."""
@@ -375,9 +413,10 @@ class Fenster(tk.Tk):
                     self.fertig(inhalt)
                     return
                 elif art == "web_fertig":
+                    adresse, status = inhalt
                     self.arbeit_beendet(True)
-                    self.status.set("Ordnerstruktur veröffentlicht.")
-                    webbrowser.open(inhalt)
+                    self.status.set(status)
+                    webbrowser.open(adresse)
                     return
                 elif art == "web_fehler":
                     self.gescheitert(inhalt, "Veröffentlichen fehlgeschlagen.")

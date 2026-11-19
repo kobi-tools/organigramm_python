@@ -11,11 +11,11 @@ Damit auch große Strukturen lesbar bleiben:
 
 ## Download
 
-Unter [Releases](https://github.com/zerox80/organigramm_python/releases) die ZIP-Datei herunterladen, entpacken und `Organigramm.exe` starten. Python muss nicht installiert sein. Getestet unter Windows 11.
+Auf der [aktuellen GitHub-Release-Seite](https://github.com/zerox80/organigramm_python/releases/latest) die Datei mit der Endung `-Setup.exe` herunterladen und öffnen. Der Assistent installiert das Programm für dein Windows-Konto unter `%LOCALAPPDATA%\Programs\Ordner-Organigramm`. Die Installation braucht keine Administratorrechte und kein Python. Danach findest du **Ordner-Organigramm** im Startmenü.
 
 Das PDF wird über Microsoft Edge oder Google Chrome erzeugt. Ohne einen der beiden Browser bleiben die HTML- und die Textdatei.
 
-Die `.exe` ist nicht signiert, Windows SmartScreen oder ein Virenscanner können deshalb warnen.
+Der Installer ist unsigniert. Windows SmartScreen kann deshalb einen Hinweis anzeigen.
 
 ## Benutzung
 
@@ -31,7 +31,7 @@ Exit-Code: `0` = alles erstellt, `1` = Ordner oder Ziel nicht nutzbar, `2` = fal
 
 ### Ordnerstruktur im Web veröffentlichen
 
-Wähle **Ordner** und **Tiefe** wie gewohnt. Öffne **Web veröffentlichen …** und gib die HTTPS-Adresse der Ablage und den Veröffentlichungsschlüssel ein. Die Adresse kann einen Port und einen Pfad wie `/ablage/` enthalten. Nach erfolgreichem Upload öffnet sich die Website. Das Programm merkt sich die Adresse und fragt den Schlüssel beim nächsten Veröffentlichen erneut ab.
+Wähle **Ordner** und **Tiefe** wie gewohnt. Öffne **Web veröffentlichen …** und gib die HTTPS-Adresse der Ablage und den Veröffentlichungsschlüssel ein. Die Adresse kann einen Port und einen Pfad wie `/ablage/` enthalten. Nach erfolgreichem Upload öffnet sich die Website. Das Programm merkt sich die Adresse. Mit **Schlüssel auf diesem Rechner merken** speichert es auch den Schlüssel pro Serveradresse in der Windows-Anmeldeinformationsverwaltung. Entferne den Haken und veröffentliche einmal erfolgreich, um den gespeicherten Schlüssel für diese Adresse zu löschen.
 
 Die Webablage muss Veröffentlichungen unterstützen. Adresse und Schlüssel bekommst du von der Person, die sie betreibt. **Erstellen** speichert weiterhin die PDF-, HTML- und Textdateien.
 
@@ -45,7 +45,11 @@ py ordner_organigramm_v2.py "D:\Ordner" --tiefe 3
 py ordner_organigramm_v2.py -h
 ```
 
-`bauen.bat` baut den fertigen Programmordner nach `dist\Ordner-Organigramm`. Dafür wird PyInstaller in einer eigenen Umgebung installiert.
+## Windows-Installer bauen und veröffentlichen
+
+1. Mit Python 3.14 für Windows x64 im Repository `bauen.bat` ausführen. PyInstaller erzeugt den Programmordner `dist\Ordner-Organigramm`.
+2. In [Inno Setup 6.6 oder neuer](https://jrsoftware.org/inno-setup/downloads) die Datei `installer\Ordner-Organigramm.iss` öffnen und **Build → Compile** wählen. Das Setup landet in `dist\` und übernimmt die Versionsnummer aus dem Programm.
+3. Für eine neue GitHub-Version die Versionsangaben in `version_info.txt` aktualisieren und den Commit pushen. Einen passenden Tag wie `v1.2.1` anlegen und mit `git push origin v1.2.1` hochladen. Der [Release-Workflow](https://github.com/zerox80/organigramm_python/actions) baut und testet den Installer und hängt ihn an das neue Release.
 
 ## Lizenz
 

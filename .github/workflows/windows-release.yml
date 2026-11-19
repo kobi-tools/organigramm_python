@@ -1,0 +1,61 @@
+name: Windows-Installer veröffentlichen
+
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: windows-2025
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
+        with:
+          python-version: "3.14"
+          architecture: x64
+      - name: Anwendung bauen
+        shell: pwsh
+        run: |
+          python -m venv .venv
+          .\.venv\Scripts\python.exe -m pip install pyinstaller==6.22.3
+          .\bauen.bat
+      - name: Installer bauen
+        shell: pwsh
+        run: |
+          $version = $env:GITHUB_REF_NAME.TrimStart('v')
+          if ($env:GITHUB_REF_NAME -notmatch '^v\d+\.\d+\.\d+$') {
+            throw 'Der Tag muss das Format vX.Y.Z haben.'
+          }
+          $compiler = Join-Path ${env:ProgramFiles(x86)} 'Inno Setup 6\ISCC.exe'
+          & $compiler .\installer\Ordner-Organigramm.iss
+          if ($LASTEXITCODE) { exit $LASTEXITCODE }
+          $setup = Get-Item "dist\Ordner-Organigramm-$version-Setup.exe"
+          "SETUP_DATEI=$($setup.FullName)" >> $env:GITHUB_ENV
+      - name: Installation und Deinstallation testen
+        shell: pwsh
+        run: |
+          $installPath = Join-Path $env:RUNNER_TEMP 'Organigramm-Testinstallation'
+          $installation = Start-Process $env:SETUP_DATEI -Wait -PassThru -WindowStyle Hidden -ArgumentList '/VERYSILENT','/SUPPRESSMSGBOXES','/NORESTART',"/DIR=`"$installPath`""
+          if ($installation.ExitCode) { throw "Setup: $($installation.ExitCode)" }
+          $key = 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Uninstall\{6DFF9578-C054-4BA2-B52E-1CBC949361F8}_is1'
+          if (!(Test-Path $key)) { throw 'Installation wurde nicht beim aktuellen Benutzer registriert.' }
+          $source = New-Item -ItemType Directory -Path (Join-Path $env:RUNNER_TEMP 'Teststruktur\Unterordner')
+          $output = New-Item -ItemType Directory -Path (Join-Path $env:RUNNER_TEMP 'Testexport')
+          $app = Join-Path $installPath 'Organigramm.exe'
+          $export = Start-Process $app -Wait -PassThru -WindowStyle Hidden -ArgumentList '--ohne-fenster',"`"$($source.Parent.FullName)`"","--ausgabe=`"$($output.FullName)`"",'--tiefe=2','--kein-pdf'
+          if ($export.ExitCode -or !(Get-ChildItem $output -Filter '*.html')) { throw 'HTML-Export fehlgeschlagen.' }
+          $uninstall = Join-Path $installPath 'unins000.exe'
+          $result = Start-Process $uninstall -Wait -PassThru -WindowStyle Hidden -ArgumentList '/VERYSILENT','/SUPPRESSMSGBOXES','/NORESTART'
+          if ($result.ExitCode -or (Test-Path $app) -or (Test-Path $key)) { throw 'Deinstallation fehlgeschlagen.' }
+      - name: GitHub-Release veröffentlichen
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create $env:GITHUB_REF_NAME $env:SETUP_DATEI --verify-tag --latest --generate-notes --title "Ordner-Organigramm $($env:GITHUB_REF_NAME.TrimStart('v'))"
