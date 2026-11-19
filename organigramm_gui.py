@@ -21,6 +21,7 @@ import webbrowser
 from tkinter import filedialog, font, messagebox, ttk
 
 import ordner_organigramm_v2 as kern
+import web_veroeffentlichen as web
 
 TITEL = "Ordner-Organigramm"
 QUELLCODE_URL = "https://github.com/zerox80/organigramm_python"
@@ -137,8 +138,13 @@ class Fenster(tk.Tk):
         self.statuszeile.grid(row=9, column=0, columnspan=3, sticky="w", pady=(6, 10))
         rahmen.bind("<Configure>", lambda e: self.statuszeile.configure(wraplength=max(e.width - 40, 300)))
 
-        knoepfe = ttk.Frame(rahmen)
-        knoepfe.grid(row=10, column=0, columnspan=3, sticky="e")
+        aktionen = ttk.Frame(rahmen)
+        aktionen.grid(row=10, column=0, columnspan=3, sticky="ew")
+        aktionen.columnconfigure(0, weight=1)
+        self.knopf_web = ttk.Button(aktionen, text="Web veröffentlichen …", command=self.web_starten)
+        self.knopf_web.grid(row=0, column=0, sticky="w", padx=(0, 12))
+        knoepfe = ttk.Frame(aktionen)
+        knoepfe.grid(row=0, column=1, sticky="e")
         self.knopf_ergebnis = ttk.Button(knoepfe, text="Ergebnis öffnen", command=self.ergebnis_oeffnen, state="disabled")
         self.knopf_ergebnis.grid(row=0, column=0, padx=(0, 6))
         self.knopf_ziel = ttk.Button(knoepfe, text="Speicherort öffnen", command=self.ziel_oeffnen, state="disabled")
@@ -148,7 +154,7 @@ class Fenster(tk.Tk):
         self.knopf_start.focus_set()
 
         link = ttk.Label(rahmen, text="Quellcode: Github", style="Link.TLabel", cursor="hand2")
-        link.grid(row=10, column=0, columnspan=3, sticky="sw")
+        link.grid(row=11, column=0, columnspan=3, sticky="sw", pady=(8, 0))
         link.bind("<Button-1>", lambda _: self.quellcode_oeffnen())
 
     def zeile_pfad(self, eltern, zeile: int, text: str, variable: tk.StringVar, frage: str):
@@ -268,16 +274,81 @@ class Fenster(tk.Tk):
         teile = self.argumente()
         if teile is None:
             return
-        self.laeuft = True
         self.ergebnis = None
-        self.knopf_start.configure(state="disabled")
         self.knopf_ergebnis.configure(state="disabled")
         self.knopf_ziel.configure(state="disabled")
-        self.balken.configure(mode="indeterminate", value=0)
-        self.balken.start(12)
+        self.arbeit_beginnen()
         self.status.set("Lese Ordnerstruktur ...")
         threading.Thread(target=self.arbeiten, args=(teile,), daemon=True).start()
         self.after(100, self.nachrichten_holen)
+
+    def arbeit_beginnen(self):
+        self.laeuft = True
+        self.knopf_start.configure(state="disabled")
+        self.knopf_web.configure(state="disabled")
+        self.balken.configure(mode="indeterminate", value=0)
+        self.balken.start(12)
+
+    def web_starten(self):
+        if self.laeuft:
+            return
+        ordner = self.ordner.get().strip().strip('"').strip()
+        if not ordner:
+            messagebox.showinfo(TITEL, "Bitte zuerst einen Ordner auswählen.", parent=self)
+            return
+        tiefe_text = self.tiefe.get()
+        dialog = tk.Toplevel(self)
+        dialog.title("Web veröffentlichen")
+        dialog.transient(self)
+        dialog.resizable(True, False)
+        dialog.columnconfigure(0, weight=1)
+        dialog.grab_set()
+        rahmen = ttk.Frame(dialog, padding=18)
+        rahmen.grid(sticky="nsew")
+        rahmen.columnconfigure(0, weight=1)
+        ziel = tk.StringVar(master=dialog, value=web.gespeichertes_ziel())
+        schluessel = tk.StringVar(master=dialog)
+        ttk.Label(rahmen, text=f"{ordner} · {tiefe_text}", wraplength=420).grid(row=0, column=0, sticky="w")
+        ttk.Label(rahmen, text="Adresse der Ablage").grid(row=1, column=0, sticky="w", pady=(12, 2))
+        adresse = ttk.Entry(rahmen, textvariable=ziel, width=50)
+        adresse.grid(row=2, column=0, sticky="ew")
+        ttk.Label(rahmen, text="Veröffentlichungsschlüssel").grid(row=3, column=0, sticky="w", pady=(12, 2))
+        passwort = ttk.Entry(rahmen, textvariable=schluessel, show="•")
+        passwort.grid(row=4, column=0, sticky="ew")
+        aktionen = ttk.Frame(rahmen)
+        aktionen.grid(row=5, column=0, sticky="e", pady=(14, 0))
+
+        def senden(_event=None):
+            try:
+                server = web.server_adresse(ziel.get())
+                schluessel_text = schluessel.get().strip()
+                if not schluessel_text:
+                    raise ValueError("Bitte den Veröffentlichungsschlüssel eingeben.")
+            except ValueError as fehler:
+                messagebox.showinfo(dialog.title(), str(fehler), parent=dialog)
+                return "break"
+            dialog.destroy()
+            self.arbeit_beginnen()
+            self.status.set("Lese den Ordnerbaum für die Website …")
+            threading.Thread(
+                target=self.web_arbeiten, args=(ordner, TIEFEN[tiefe_text], server, schluessel_text), daemon=True,
+            ).start()
+            self.after(100, self.nachrichten_holen)
+            return "break"
+
+        ttk.Button(aktionen, text="Abbrechen", command=dialog.destroy).grid(row=0, column=0, padx=(0, 8))
+        ttk.Button(aktionen, text="Veröffentlichen", style="Haupt.TButton", command=senden).grid(row=0, column=1)
+        dialog.bind("<Return>", senden)
+        dialog.bind("<Escape>", lambda _: dialog.destroy())
+        (passwort if ziel.get() else adresse).focus_set()
+
+    def web_arbeiten(self, ordner, tiefe, server, schluessel):
+        try:
+            struktur = kern.struktur_lesen(ordner, tiefe)
+            self.nachrichten.put(("status", "Übertrage Ordnerbaum an die Website …"))
+            self.nachrichten.put(("web_fertig", web.veroeffentliche(server, schluessel, struktur)))
+        except (OSError, ValueError, RecursionError) as fehler:
+            self.nachrichten.put(("web_fehler", str(fehler)))
 
     def arbeiten(self, teile: list):
         """Läuft im Hintergrund, damit das Fenster bedienbar bleibt."""
@@ -303,6 +374,14 @@ class Fenster(tk.Tk):
                 elif art == "fertig":
                     self.fertig(inhalt)
                     return
+                elif art == "web_fertig":
+                    self.arbeit_beendet(True)
+                    self.status.set("Ordnerstruktur veröffentlicht.")
+                    webbrowser.open(inhalt)
+                    return
+                elif art == "web_fehler":
+                    self.gescheitert(inhalt, "Veröffentlichen fehlgeschlagen.")
+                    return
                 else:
                     self.gescheitert(inhalt)
                     return
@@ -315,6 +394,7 @@ class Fenster(tk.Tk):
         self.balken.stop()
         self.balken.configure(mode="determinate", value=100 if geklappt else 0)
         self.knopf_start.configure(state="normal")
+        self.knopf_web.configure(state="normal")
 
     def fertig(self, e: kern.Ergebnis):
         self.arbeit_beendet(True)
@@ -337,9 +417,9 @@ class Fenster(tk.Tk):
             )
             kern.oeffne(e.html_datei)
 
-    def gescheitert(self, text: str):
+    def gescheitert(self, text: str, status="Nicht erstellt."):
         self.arbeit_beendet(False)
-        self.status.set("Nicht erstellt.")
+        self.status.set(status)
         messagebox.showerror(TITEL, text, parent=self)
 
     def ergebnis_oeffnen(self):
@@ -355,7 +435,7 @@ class Fenster(tk.Tk):
 
     def schliessen(self):
         if self.laeuft and not messagebox.askyesno(
-            TITEL, "Das Organigramm wird gerade erstellt. Trotzdem schließen?", parent=self,
+            TITEL, "Die Verarbeitung läuft noch. Trotzdem schließen?", parent=self,
         ):
             return
         self.destroy()

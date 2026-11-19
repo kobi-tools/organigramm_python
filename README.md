@@ -29,6 +29,12 @@ Organigramm.exe --ohne-fenster "D:\Ordner" --ausgabe "D:\Zielordner" --tiefe 4
 
 Exit-Code: `0` = alles erstellt, `1` = Ordner oder Ziel nicht nutzbar, `2` = falsche Option, `3` = ohne PDF.
 
+### Ordnerstruktur im Web veröffentlichen
+
+Wähle **Ordner** und **Tiefe** wie gewohnt. Öffne **Web veröffentlichen …** und gib die HTTPS-Adresse der Ablage und den Veröffentlichungsschlüssel ein. Die Adresse kann einen Port und einen Pfad wie `/ablage/` enthalten. Nach erfolgreichem Upload öffnet sich die Website. Das Programm merkt sich die Adresse und fragt den Schlüssel beim nächsten Veröffentlichen erneut ab.
+
+Die Webablage muss Veröffentlichungen unterstützen. Adresse und Schlüssel bekommst du von der Person, die sie betreibt. **Erstellen** speichert weiterhin die PDF-, HTML- und Textdateien.
+
 ## Aus dem Quelltext starten
 
 Es werden keine Zusatzpakete gebraucht. Entwickelt und getestet mit Python 3.14.

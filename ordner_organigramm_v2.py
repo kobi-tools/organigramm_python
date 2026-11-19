@@ -40,6 +40,7 @@ import collections
 import ctypes
 import datetime as dt
 import fnmatch
+import hashlib
 import html
 import math
 import os
@@ -245,6 +246,31 @@ class Leser:
 
 def anzahl_ordner(k: Ordner) -> int:
     return sum(1 + anzahl_ordner(c) for c in k.kinder + k.versteckt)
+
+
+def struktur_lesen(pfad: str, tiefe: int, melde=print) -> dict:
+    """Liest den ungekürzten Ordnerbaum für die Webansicht."""
+    def als_daten(ordner):
+        daten = {"name": ordner.name, "kinder": [als_daten(kind) for kind in ordner.kinder]}
+        if ordner.tiefer:
+            daten["tiefer"] = ordner.tiefer
+        if ordner.fehler or ordner.verknuepfung:
+            daten["hinweis"] = ordner.fehler or "Verknüpfung"
+        return daten
+
+    wurzel = os.path.abspath(os.path.expandvars(os.path.expanduser(pfad)))
+    cfg = einstellungen(["--tiefe", str(tiefe), "--", wurzel])
+    baum = Leser(cfg, melde).lies(wurzel, os.path.basename(wurzel.rstrip("\\/")) or wurzel)
+    if baum.fehler:
+        raise ValueError(f"{wurzel}: {baum.fehler}")
+    return {
+        "version": 1,
+        "quelle": hashlib.sha256(os.path.normcase(wurzel).encode("utf-8")).hexdigest(),
+        "pfad": wurzel,
+        "stand": dt.date.today().isoformat(),
+        "tiefe": cfg.tiefe,
+        "baum": als_daten(baum),
+    }
 
 
 def aufgefuehrt(k: Ordner) -> int:
