@@ -49,7 +49,7 @@ py ordner_organigramm_v2.py -h
 
 1. Mit Python 3.14 für Windows x64 im Repository `bauen.bat` ausführen. PyInstaller erzeugt den Programmordner `dist\Ordner-Organigramm`.
 2. In [Inno Setup 6.6 oder neuer](https://jrsoftware.org/inno-setup/downloads) die Datei `installer\Ordner-Organigramm.iss` öffnen und **Build → Compile** wählen. Das Setup landet in `dist\` und übernimmt die Versionsnummer aus dem Programm.
-3. Für eine neue GitHub-Version die Versionsangaben in `version_info.txt` aktualisieren und den Commit pushen. Einen passenden Tag wie `v1.2.1` anlegen und mit `git push origin v1.2.1` hochladen. Der [Release-Workflow](https://github.com/zerox80/organigramm_python/actions) baut und testet den Installer und hängt ihn an das neue Release.
+3. Für eine neue GitHub-Version die Versionsangaben in `version_info.txt` aktualisieren und den Commit pushen. Einen passenden Tag wie `v1.2.2` anlegen und mit `git push origin v1.2.2` hochladen. Der [Release-Workflow](https://github.com/zerox80/organigramm_python/actions) baut und testet den Installer und hängt ihn an das neue Release.
 
 Für einen bereits vorhandenen Tag kannst du den Workflow **Windows-Installer veröffentlichen** unter **Actions → Run workflow** manuell starten.
 

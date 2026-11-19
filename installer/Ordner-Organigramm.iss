@@ -1,15 +1,12 @@
-#define AppName "Ordner-Organigramm"
+﻿#define AppName "Ordner-Organigramm"
 #define AppExe "Organigramm.exe"
 #define ProgramDir AddBackslash(SourcePath) + "..\dist\Ordner-Organigramm"
-#define int Major 0
-#define int Minor 0
-#define int Revision 0
-#define int Build 0
-#define FileVersion GetVersionComponents(ProgramDir + "\" + AppExe, Major, Minor, Revision, Build)
+#dim VersionParts[4]
+#define FileVersion GetVersionComponents(ProgramDir + "\" + AppExe, VersionParts[0], VersionParts[1], VersionParts[2], VersionParts[3])
 #if FileVersion == ""
   #error "Programm fehlt. Zuerst bauen.bat ausführen."
 #endif
-#define AppVersion Str(Major) + "." + Str(Minor) + "." + Str(Revision)
+#define AppVersion Str(VersionParts[0]) + "." + Str(VersionParts[1]) + "." + Str(VersionParts[2])
 
 [Setup]
 AppId={{6DFF9578-C054-4BA2-B52E-1CBC949361F8}
