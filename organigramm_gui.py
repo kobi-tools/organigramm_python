@@ -25,7 +25,7 @@ import web_veroeffentlichen as web
 import windows_schluessel as schluesselspeicher
 
 TITEL = "Ordner-Organigramm"
-QUELLCODE_URL = "https://github.com/zerox80/organigramm_python"
+QUELLCODE_URL = "https://github.com/kobi-tools/organigramm_python"
 
 # Anzeige -> (Papierformat, Spalten)
 PAPIERE = {

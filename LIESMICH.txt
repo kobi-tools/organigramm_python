@@ -39,4 +39,4 @@ Automatisch, z. B. als geplante Aufgabe (ohne Fenster)
   Organigramm.exe --ohne-fenster "D:\Ordner" --ausgabe "D:\Zielordner" --tiefe 4
 
 Quellcode
-  https://github.com/zerox80/organigramm_python
+  https://github.com/kobi-tools/organigramm_python
